@@ -1,11 +1,12 @@
 // Package harnesskind is the importable form of the charly HARNESS-SURFACE kinds: `skill`,
-// `hook`, and `marketplace` — first-class entities carrying the marketplace skill corpus, the
-// .claude/hooks/* gate scripts, and the marketplace/harness config into candy config (the
-// plugins→candies migration). A KIND provider dispatches via the pb Invoke(OpLoad) envelope:
-// decode the authored `skill:`/`hook:`/`marketplace:` entity from op.Params into the core
-// spec.Skill/spec.Hook/spec.Marketplace type and re-marshal as canonical JSON; the host lands
-// it in uf.PluginKinds["skill"]/["hook"]/["marketplace"][<name>] (the FLAT opaque-body path —
-// these kinds are Structural:false: they nest no deploy resource members).
+// `hook`, `marketplace`, and `docs` — first-class entities carrying the marketplace skill
+// corpus, the .claude/hooks/* gate scripts, the marketplace/harness config, and the docs-site
+// generation config into candy config (the plugins→candies migration). A KIND provider
+// dispatches via the pb Invoke(OpLoad) envelope: decode the authored `skill:`/`hook:`/
+// `marketplace:`/`docs:` entity from op.Params into the core spec.Skill/spec.Hook/
+// spec.Marketplace/spec.DocsConfig type and re-marshal as canonical JSON; the host lands it in
+// uf.PluginKinds["skill"]/["hook"]/["marketplace"]/["docs"][<name>] (the FLAT opaque-body
+// path — these kinds are Structural:false: they nest no deploy resource members).
 //
 // The values are SELF-CONTAINED (scalars + inline block-scalar content — nothing rich or
 // core-referencing like #Candy/#Vm), so — unlike candy/substrate — they ride op.Params and are
@@ -36,7 +37,7 @@ const calver = "2026.218.1200"
 // NewProvider returns the harness-kind provider for in-proc registration or out-of-proc serving.
 func NewProvider() pb.ProviderServer { return &provider{} }
 
-// NewMeta ships the three flat kind capabilities + their served self-contained schemas
+// NewMeta ships the four flat kind capabilities + their served self-contained schemas
 // (fixedMeta.Describe compiles the embedded schemaFS's "schema" dir standalone).
 func NewMeta() pb.PluginMetaServer {
 	return sdk.NewMeta(calver,
@@ -44,6 +45,7 @@ func NewMeta() pb.PluginMetaServer {
 			{Class: "kind", Word: "skill", InputDef: "#SkillInput"},
 			{Class: "kind", Word: "hook", InputDef: "#HookInput"},
 			{Class: "kind", Word: "marketplace", InputDef: "#MarketplaceInput"},
+			{Class: "kind", Word: "docs", InputDef: "#DocsInput"},
 		},
 		schemaFS)
 }
@@ -68,6 +70,8 @@ func (provider) Invoke(_ context.Context, req *pb.InvokeRequest) (*pb.InvokeRepl
 		out = &spec.Hook{}
 	case "marketplace":
 		out = &spec.Marketplace{}
+	case "docs":
+		out = &spec.DocsConfig{}
 	default:
 		return nil, fmt.Errorf("harness kind: unsupported word %q", req.GetReserved())
 	}
