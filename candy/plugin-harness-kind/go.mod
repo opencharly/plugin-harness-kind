@@ -3,8 +3,8 @@ module github.com/opencharly/plugin-harness-kind/candy/plugin-harness-kind
 go 1.26.4
 
 require (
-	github.com/opencharly/sdk v0.2026234.347
-	github.com/opencharly/spec v0.2026232.520
+	github.com/opencharly/sdk v0.2026254.440-0.20260911050836-eb7702068d33
+	github.com/opencharly/spec v0.2026254.503
 )
 
 require (
