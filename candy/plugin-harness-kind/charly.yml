@@ -1,7 +1,5 @@
-version: 2026.232.0520
 plugin-harness-kind:
     candy:
-        version: 2026.218.1200
         description: |-
             The `skill` / `hook` / `marketplace` HARNESS-SURFACE kinds — the plugins→candies
             migration's first-class entities. A `skill:` node is a sibling top-level entity in a
