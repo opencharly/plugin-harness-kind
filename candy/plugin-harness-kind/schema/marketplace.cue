@@ -6,7 +6,12 @@
 // spec.Marketplace.
 #MarketplaceInput: close({
 	name:        string & =~"^[a-z][a-z0-9-]*$"         // "charly-plugins" (the marketplace name)
-	version:     string & =~"^[0-9]+[.][0-9]+[.][0-9]+$" // marketplace.json metadata.version
+	// version is DELIBERATELY absent from the authored shape: the marketplace
+	// versions by commit SHA (marketplace/README.md: "No `version` fields
+	// anywhere"), and the org-wide cutover dropped the stamp from every entity.
+	// Kept optional here only so a legacy config carrying one still loads; the
+	// emitted manifests omit it via `omitempty`.
+	version?:    string & =~"^[0-9]+[.][0-9]+[.][0-9]+$" // (legacy) marketplace.json metadata.version
 	description?: string & !=""                          // marketplace.json metadata.description
 	families: {[string]: #MarketplaceFamilyInput}    // family name → its metadata (plugins/ dir = family)
 	settings?: #MarketplaceSettingsInput              // the harness wiring data
