@@ -4,7 +4,10 @@ The `skill` / `hook` / `marketplace` / `docs` **harness-surface kinds** — the
 first-class entities of the plugins→candies migration.
 
 A `skill:` node is a sibling top-level entity in a candy's `charly.yml` carrying
-the FULL inline skill definition (metadata + markdown content); a `hook:` node
+the skill's ROUTING metadata (`family`/`owner`/`triggers`) while its prose is
+authored in the file the repo owns — `.agents/skills/<name>/SKILL.md` (plus
+`references/<stem>.md`) — the in-line `content:`/`description:` form staying
+accepted until the relocation's final leg; a `hook:` node
 carries a `.claude/hooks/*` gate script; a `marketplace:` node carries the single
 harness/marketplace config (families + settings); a `docs:` node carries the
 docs-site generation config.
@@ -13,7 +16,7 @@ docs-site generation config.
 
 | Capability | Surface |
 |---|---|
-| `kind:skill` | the `skill:` entity — a full inline skill (metadata + content) |
+| `kind:skill` | the `skill:` entity — routing metadata plus the prose file its repo owns |
 | `kind:hook` | the `hook:` entity — a `.claude/hooks/*` gate script |
 | `kind:marketplace` | the `marketplace:` entity — the harness/marketplace config |
 | `kind:docs` | the `docs:` entity — the docs-site generation config |
@@ -26,7 +29,7 @@ as opaque JSON.
 
 The plugin is **compiled-in** — the words must be recognized on every parse
 (validate/build/deploy) without an out-of-process build. The `skill` bodies feed
-both the `ai.opencharly.skills` OCI label and the regenerated marketplace corpus;
+both the `ai.opencharly.skill` OCI label and the regenerated marketplace corpus;
 `hook` bodies feed the `.claude/hooks/*` emission; the `marketplace` body feeds
 the plugin.json / marketplace.json / profiles.json / settings.json surface.
 
