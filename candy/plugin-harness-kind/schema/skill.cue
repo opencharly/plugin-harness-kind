@@ -8,12 +8,20 @@
 // pattern: the SAME authored WIRE keys, so the host validates a real skill entity against
 // #SkillInput (validateAuthoredPluginInput, the load gate) and this plugin's Invoke canonicalises
 // the body back through the core spec.Skill type.
+//
+// THE BODY LIVES IN A FILE (the `.agents/skills` relocation). A skill is authored at
+// <tree>/<name>/SKILL.md plus references/<stem>.md, where <tree> is the owning candy's `skills:`
+// list (default `.agents/skills`) and <name> is this node's `name:` — or the NODE NAME when
+// `name:` is omitted. So `name:`, `description:` and `content:` are OPTIONAL: a node may carry only
+// the ROUTING the consumers need (`family`, `owner`, `triggers`, `category`) while the file carries
+// the prose. The in-line form stays ACCEPTED until the relocation's final leg; the core schema
+// states the same contract, and the two move together (this schema is its faithful reproduction).
 #SkillInput: close({
-	name:        string & =~"^[a-z][a-z0-9-]*$" // marketplace-globally-unique skill id (SKILL.md folder name)
-	family:      string & =~"^[a-z][a-z0-9-]*$" // marketplace family → plugins/<family>/
+	name?:       string & =~"^[a-z][a-z0-9-]*$" // skill id = the SKILL.md directory name; DEFAULTS to the node name
+	family:      string & =~"^[a-z][a-z0-9-]*$" // marketplace family → <family>/skills/
 	owner:       string & =~"^[a-z][a-z0-9-]*$" // owning candy/concept-candy entity name
-	description: string & !=""                   // SKILL.md frontmatter description (Skill-tool dispatch keyword)
-	content:     string & !=""                   // SKILL.md markdown body
+	description?: string & !=""                  // SKILL.md frontmatter description — authored in the FILE once the body moved
+	content?:    string & !=""                   // SKILL.md markdown body — authored in the FILE once the body moved
 	type?:       *"skill" | "agent"              // "agent" ⇒ a sub-agent definition
 	model?:      string & !=""                   // agent type: frontmatter model
 	tools?:      [...(string & !="")]            // agent type: allowed tool set
