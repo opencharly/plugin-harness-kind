@@ -3,8 +3,10 @@ plugin-harness-kind:
         description: |-
             The `skill` / `hook` / `marketplace` HARNESS-SURFACE kinds — the plugins→candies
             migration's first-class entities. A `skill:` node is a sibling top-level entity in a
-            candy's charly.yml carrying the FULL inline skill definition (metadata + markdown
-            content); a `hook:` node carries a .claude/hooks/* gate script; a `marketplace:` node
+            candy's charly.yml carrying the skill's ROUTING metadata (family/owner/triggers) while
+            its prose is authored in the FILE the repo owns — `.agents/skills/<name>/SKILL.md` (plus
+            `references/<stem>.md`) — the in-line `content:`/`description:` form staying accepted
+            until the relocation's final leg; a `hook:` node carries a .claude/hooks/* gate script; a `marketplace:` node
             carries the single harness/marketplace config (families + settings). All three are
             FLAT kinds (Structural:false — no deploy members): their self-contained values ride
             op.Params, are validated at load against this plugin's served #SkillInput/#HookInput/
