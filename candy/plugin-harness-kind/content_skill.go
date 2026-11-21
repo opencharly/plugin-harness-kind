@@ -32,9 +32,9 @@ import (
 // A box's diagnostics fail its build; the project's fail validate. Every node is visited in sorted
 // order, so a gate that reports the first problem names the same node every run (opencharly/sdk#434).
 //
-// Stated limit: only the DEFAULT skill tree (candywalk.AgentsSkillsDir) is read. A candy declaring a
-// non-default `skills:` tree is honoured by the corpus generator but not here — the request does not
-// carry the candy's `skills:` list — and such a node reports "no body" rather than shipping without it.
+// Only the DEFAULT skill tree (candywalk.AgentsSkillsDir) is read: the request does not yet carry a
+// candy's declared `skills:` trees, so a body that lives only in one reports "no body" rather than
+// shipping without it — opencharly/plugin-harness-kind#14.
 
 // imageOwnerFix is the remedy the operator's ruling names, quoted verbatim in the diagnostic so the
 // author reads the action and not only the prohibition (opencharly/sdk#434).
@@ -59,7 +59,7 @@ func skillContent(req spec.OwnedContentRequest) spec.OwnedContentReply {
 	}
 	sort.Strings(nodes)
 
-	seen := map[string]bool{}
+	seen := map[string]string{} // family/name -> the node that claimed it
 	var entries []spec.LabelSkillEntry
 	for _, node := range nodes {
 		var s spec.Skill
@@ -101,18 +101,23 @@ func skillContent(req spec.OwnedContentRequest) spec.OwnedContentReply {
 		if projectScope {
 			continue // validation only: the body resolves, which is all the project is asked
 		}
+		// One skill per family/name: the install path and the label entry are both keyed by it, so
+		// a second node with the same key is an authoring error — never a silent collapse that
+		// would label one skill while copying two bodies onto one path.
+		entry := labelEntry(s, name, body)
+		key := entry.Family + "/" + entry.Name
+		if first, dup := seen[key]; dup {
+			reply.Diagnostics = append(reply.Diagnostics, fmt.Sprintf(
+				"skill %q: node %q has the same family/name %q as node %q — one image can carry one skill per name", name, node, key, first))
+			continue
+		}
 		files, err := skillFiles(root, name, s.Type)
 		if err != nil {
 			reply.Diagnostics = append(reply.Diagnostics, fmt.Sprintf("skill %q: %v", name, err))
 			continue
 		}
+		seen[key] = node
 		reply.Files = append(reply.Files, files...)
-		entry := labelEntry(s, name, body)
-		key := entry.Family + "/" + entry.Name
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
 		entries = append(entries, entry)
 	}
 	if len(entries) > 0 {

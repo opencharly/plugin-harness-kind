@@ -310,3 +310,22 @@ func TestInvokeContentAndDescribeContents(t *testing.T) {
 		}
 	}
 }
+
+// Two nodes sharing family/name are a diagnostic, never a silent collapse: the label carries ONE
+// entry and the install ONE body, so the install set stays the label set (the review note on
+// plugin-harness-kind#13: files used to be appended before the dedupe).
+func TestSkillContent_DuplicateNameIsDiagnosedNotCollapsed(t *testing.T) {
+	a, b := t.TempDir(), t.TempDir()
+	writeSkill(t, a, "dup", "name: dup\ndescription: a\n", "\nA\n", nil)
+	writeSkill(t, b, "dup", "name: dup\ndescription: b\n", "\nB\n", nil)
+	reply := skillContent(boxReq(map[string]string{"own-a": a, "own-b": b}, map[string]spec.RawBody{
+		"dup":   node(t, spec.Skill{Family: "f", Owner: "own-a"}),
+		"dup-2": node(t, spec.Skill{Name: "dup", Family: "f", Owner: "own-b"}),
+	}))
+	if len(reply.Files) != 1 || len(labelEntries(t, reply)) != 1 {
+		t.Fatalf("files %+v, label %+v — want exactly one body and one entry", reply.Files, labelEntries(t, reply))
+	}
+	if len(reply.Diagnostics) != 1 || !strings.Contains(reply.Diagnostics[0], `same family/name "f/dup"`) {
+		t.Fatalf("diagnostics = %v, want the duplicate named", reply.Diagnostics)
+	}
+}
