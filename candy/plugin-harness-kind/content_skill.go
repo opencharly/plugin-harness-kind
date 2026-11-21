@@ -59,7 +59,8 @@ func skillContent(req spec.OwnedContentRequest) spec.OwnedContentReply {
 	}
 	sort.Strings(nodes)
 
-	seen := map[string]string{} // family/name -> the node that claimed it
+	seenLabel := map[string]string{} // label family/name -> the node that claimed it
+	seenPath := map[string]string{}  // install path -> the node that claimed it
 	var entries []spec.LabelSkillEntry
 	for _, node := range nodes {
 		var s spec.Skill
@@ -101,12 +102,15 @@ func skillContent(req spec.OwnedContentRequest) spec.OwnedContentReply {
 		if projectScope {
 			continue // validation only: the body resolves, which is all the project is asked
 		}
-		// One skill per family/name: the install path and the label entry are both keyed by it, so
-		// a second node with the same key is an authoring error — never a silent collapse that
-		// would label one skill while copying two bodies onto one path.
+		// The install set IS the label set, so a node joins both or neither. Two collisions break
+		// that, and each is an authoring error, never a silent collapse:
+		//   - an install PATH another node already claimed (the path is keyed by the skill's name
+		//     and type, not its family — two families can name the same skill), which would copy
+		//     two bodies onto one file while the label listed two entries;
+		//   - a label family/name another node already claimed.
 		entry := labelEntry(s, name, body)
 		key := entry.Family + "/" + entry.Name
-		if first, dup := seen[key]; dup {
+		if first, dup := seenLabel[key]; dup {
 			reply.Diagnostics = append(reply.Diagnostics, fmt.Sprintf(
 				"skill %q: node %q has the same family/name %q as node %q — one image can carry one skill per name", name, node, key, first))
 			continue
@@ -116,7 +120,15 @@ func skillContent(req spec.OwnedContentRequest) spec.OwnedContentReply {
 			reply.Diagnostics = append(reply.Diagnostics, fmt.Sprintf("skill %q: %v", name, err))
 			continue
 		}
-		seen[key] = node
+		if path, first, dup := claimedPath(seenPath, files); dup {
+			reply.Diagnostics = append(reply.Diagnostics, fmt.Sprintf(
+				"skill %q: node %q installs %q, which node %q already installs — one image can carry one skill per name", name, node, path, first))
+			continue
+		}
+		seenLabel[key] = node
+		for _, f := range files {
+			seenPath[f.Path] = node
+		}
 		reply.Files = append(reply.Files, files...)
 		entries = append(entries, entry)
 	}
@@ -146,6 +158,16 @@ func ownerDiagnostic(name string, s spec.Skill, isImage bool) string {
 	}
 	return fmt.Sprintf("skill %q: owner %q is not a candy of this project, so its prose cannot be located: a `candy:` node carrying `base:` or `from:` is an IMAGE (routed to the box set), and only a candy has a source directory to read %s from",
 		name, s.Owner, candywalk.NodeBodyLocation(s.Type, name, nil))
+}
+
+// claimedPath reports the first of files whose install path a node already claimed.
+func claimedPath(seen map[string]string, files []spec.ContentFile) (path, first string, dup bool) {
+	for _, f := range files {
+		if n, ok := seen[f.Path]; ok {
+			return f.Path, n, true
+		}
+	}
+	return "", "", false
 }
 
 // skillFiles lists the files of one node's authored body, each at the path a harness inside the image

@@ -56,7 +56,7 @@ func TestSkillInputBodyIsOptional(t *testing.T) {
 	if err := v.ValidateJSON("#SkillInput", inline); err != nil {
 		t.Fatalf("#SkillInput rejected an in-line skill body — every live entity still uses this shape:\n%v", err)
 	}
-	t.Log("in-line skill body: ACCEPTED (back-compat held)")
+	t.Log("in-line skill body: the #SkillInput LOAD gate still accepts the fields (opencharly/sdk#604); kind:skill's owned content diagnoses an in-line-only node")
 
 	// (c) THE ROUTING STAYS REQUIRED — an optional `name`/`description`/`content` must not read as
 	// an optional `owner`: `owner` decides which images carry the skill (kind:skill's owned content

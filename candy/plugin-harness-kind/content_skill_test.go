@@ -329,3 +329,22 @@ func TestSkillContent_DuplicateNameIsDiagnosedNotCollapsed(t *testing.T) {
 		t.Fatalf("diagnostics = %v, want the duplicate named", reply.Diagnostics)
 	}
 }
+
+// The install path is keyed by the skill's name and type, not its family: two families naming the
+// same skill would copy two bodies onto ONE file while the label listed two entries. That is a
+// diagnostic, so the install set stays the label set (the round-2 review of plugin-harness-kind#13).
+func TestSkillContent_SameNameAcrossFamiliesIsDiagnosed(t *testing.T) {
+	a, b := t.TempDir(), t.TempDir()
+	writeSkill(t, a, "dup", "name: dup\ndescription: a\n", "\nA\n", nil)
+	writeSkill(t, b, "dup", "name: dup\ndescription: b\n", "\nB\n", nil)
+	reply := skillContent(boxReq(map[string]string{"own-a": a, "own-b": b}, map[string]spec.RawBody{
+		"dup":   node(t, spec.Skill{Family: "f", Owner: "own-a"}),
+		"dup-2": node(t, spec.Skill{Name: "dup", Family: "g", Owner: "own-b"}),
+	}))
+	if len(reply.Files) != 1 || len(labelEntries(t, reply)) != 1 {
+		t.Fatalf("files %+v, label %+v — want exactly one body and one entry", reply.Files, labelEntries(t, reply))
+	}
+	if len(reply.Diagnostics) != 1 || !strings.Contains(reply.Diagnostics[0], `installs ".agents/skills/dup/SKILL.md", which node "dup" already installs`) {
+		t.Fatalf("diagnostics = %v, want the shared install path named", reply.Diagnostics)
+	}
+}
