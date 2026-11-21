@@ -42,7 +42,9 @@ func NewProvider() pb.ProviderServer { return &provider{} }
 func NewMeta() pb.PluginMetaServer {
 	return sdk.NewMeta(calver,
 		[]sdk.ProvidedCapability{
-			{Class: "kind", Word: "skill", InputDef: "#SkillInput"},
+			// Contents: kind:skill serves ops.OpContent — the skills a composed candy owns are
+			// installed into the image and labelled (content_skill.go).
+			{Class: "kind", Word: "skill", InputDef: "#SkillInput", Contents: true},
 			{Class: "kind", Word: "hook", InputDef: "#HookInput"},
 			{Class: "kind", Word: "marketplace", InputDef: "#MarketplaceInput"},
 			{Class: "kind", Word: "docs", InputDef: "#DocsInput"},
@@ -56,8 +58,11 @@ type provider struct{ pb.UnimplementedProviderServer }
 // re-marshalled as canonical JSON (the host validated it against the served #*Input schema
 // first, via validateAuthoredPluginInput — the load gate).
 func (provider) Invoke(_ context.Context, req *pb.InvokeRequest) (*pb.InvokeReply, error) {
+	if req.GetOp() == sdk.OpContent && req.GetReserved() == "skill" {
+		return invokeSkillContent(req)
+	}
 	if req.GetOp() != sdk.OpLoad {
-		return nil, fmt.Errorf("harness kind: unsupported op %q (only %q)", req.GetOp(), sdk.OpLoad)
+		return nil, fmt.Errorf("harness kind %q: unsupported op %q", req.GetReserved(), req.GetOp())
 	}
 	if len(req.GetParamsJson()) == 0 {
 		return nil, errors.New("harness kind: load requires a CUE input payload")
@@ -81,6 +86,21 @@ func (provider) Invoke(_ context.Context, req *pb.InvokeRequest) (*pb.InvokeRepl
 	res, err := json.Marshal(out)
 	if err != nil {
 		return nil, fmt.Errorf("harness kind %q: marshal entity: %w", req.GetReserved(), err)
+	}
+	return &pb.InvokeReply{ResultJson: res}, nil
+}
+
+// invokeSkillContent decodes the kit's OwnedContentRequest and answers it with kind:skill's owned
+// content (content_skill.go). A request that does not decode is an error: the kit sent a shape this
+// kind does not speak, and answering it with nothing would build an image silently without its skills.
+func invokeSkillContent(req *pb.InvokeRequest) (*pb.InvokeReply, error) {
+	var in spec.OwnedContentRequest
+	if err := json.Unmarshal(req.GetParamsJson(), &in); err != nil {
+		return nil, fmt.Errorf("harness kind \"skill\": decode content request: %w", err)
+	}
+	res, err := json.Marshal(skillContent(in))
+	if err != nil {
+		return nil, fmt.Errorf("harness kind \"skill\": marshal content reply: %w", err)
 	}
 	return &pb.InvokeReply{ResultJson: res}, nil
 }

@@ -56,11 +56,11 @@ func TestSkillInputBodyIsOptional(t *testing.T) {
 	if err := v.ValidateJSON("#SkillInput", inline); err != nil {
 		t.Fatalf("#SkillInput rejected an in-line skill body — every live entity still uses this shape:\n%v", err)
 	}
-	t.Log("in-line skill body: ACCEPTED (back-compat held)")
+	t.Log("in-line skill body: the #SkillInput LOAD gate still accepts the fields (opencharly/sdk#604); kind:skill's owned content diagnoses an in-line-only node")
 
 	// (c) THE ROUTING STAYS REQUIRED — an optional `name`/`description`/`content` must not read as
-	// an optional `owner`: `owner` is the OCI-label association (CollectSkills filters by
-	// owner ∈ composed candy chain), so an unattributable skill is not a skill. Measured: the
+	// an optional `owner`: `owner` decides which images carry the skill (kind:skill's owned content
+	// filters by owner ∈ composed candy chain), so an unattributable skill is not a skill. Measured: the
 	// served-schema validator reports a missing top-level field as an `incomplete value`, so this
 	// arm really does discriminate.
 	noOwner := []byte(`{"family": "internals"}`)
